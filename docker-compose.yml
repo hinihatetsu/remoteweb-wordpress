@@ -1,0 +1,71 @@
+version: "3.4"
+
+services:
+  wordpress:
+    image: wordpress
+    restart: always
+    depends_on:
+      - db
+    env_file:
+      - base.env
+      - .env
+    volumes:
+      - type: volume
+        source: wordpress
+        target: /var/www/html
+      - type: bind
+        source: ./wp-config.php
+        target: /var/www/html/wp-config.php
+
+  db:
+    image: mysql/mysql-server:8.0
+    restart: always
+    env_file:
+      - base.env
+      - .env
+    volumes:
+      - type: volume
+        source: db
+        target: /var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    depends_on:
+      - wordpress
+    env_file:
+      - base.env
+      - .env
+    volumes:
+      - type: bind
+        source: ./nginx/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - type: bind
+        source: ./nginx/conf.d
+        target: /etc/nginx/conf.d
+    command: /bin/sh -c "envsubst '$$SERVER_NAME' < /etc/nginx/conf.d/template.default.conf > /etc/nginx/conf.d/default.conf; nginx -g 'daemon off;'"
+
+  remoteweb:
+    image: hinihatetsu/remoteweb-client
+    restart: always
+    depends_on:
+      - nginx
+    env_file:
+      - base.env
+      - .env
+    environment:
+      REMOTEWEB_WEB_URI: http://nginx
+      REMOTEWEB_WORKERS: 4
+      REMOTEWEB_KEYFILE: /app/remoteweb_key
+
+    volumes:
+      - type: bind
+        source: ./remoteweb_key
+        target: /app/remoteweb_key
+        read_only: true
+
+volumes:
+  wordpress:
+  db:
