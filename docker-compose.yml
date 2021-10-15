@@ -14,8 +14,11 @@ services:
         source: wordpress
         target: /var/www/html
       - type: bind
-        source: ./wp-config.php
+        source: ./wp/wp-config.php
         target: /var/www/html/wp-config.php
+      - type: bind
+        source: ./wp/expose-off.ini
+        target: /usr/local/etc/php/conf.d/expose-off.ini
 
   db:
     image: mysql/mysql-server:8.0
